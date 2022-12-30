@@ -26,6 +26,7 @@ defmodule GrassHopper do
     quote do
       use GenServer
       @behaviour GrassHopper
+      @dialyzer {:no_match, [{:handle_continue, 2}]}
 
       def start_link(opts \\ []) do
         GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -34,13 +35,16 @@ defmodule GrassHopper do
       @impl true
       def init(local_opts \\ []) do
         opts = Keyword.merge(unquote(global_opts), local_opts)
-        IO.inspect(opts)
+
         timestamp = Keyword.get_lazy(opts, :start_time, fn ->
           NaiveDateTime.utc_now()
         end)
         state = %{opts: opts, from: timestamp, to: timestamp}
         {:ok, state, {:continue, []}}
       end
+
+      @impl true
+      def next(_), do: nil
 
       @impl true
       def handle_continue(_, state) do
@@ -70,6 +74,8 @@ defmodule GrassHopper do
       def handle_info(:refresh, state) do
         {:noreply, state, {:continue, []}}
       end
+
+      defoverridable next: 1
     end
   end
 
